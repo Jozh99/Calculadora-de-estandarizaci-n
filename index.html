@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
 <title>Calculadora de Estandarización y Control de Calidad Láctea</title>
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#16403B">
+
+<!-- soporte iOS: "Agregar a inicio" -->
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Calc. Lab">
 <style>
   :root{
     --teal-deep:#16403B; --bg:#F5F7F6; --ink:#1D2B2A; --ink-soft:#78827E; --line:#E4E9E7;
@@ -12,6 +22,7 @@
 
     --std:#2A6F9E;    --std-soft:#DCEAF4;
     --pol:#A9762F;    --pol-soft:#F3E7D4;
+    --que:#CB6E17;    --que-soft:#FBE7D2;
     --sol:#6B5B95;    --sol-soft:#E9E4F3;
     --crio:#1F7A8C;   --crio-soft:#DBEEF1;
     --warn-bg:#FFF3E0; --warn-line:#E8B769; --warn-ink:#8A5000;
@@ -109,12 +120,14 @@
 
     <!-- LECHE EN POLVO -->
     <section class="panel" id="panel-polvo" style="--accent:#A9762F;--accent-soft:#F3E7D4;">
-      <p class="explain">Estima la composición teórica del polvo que resultará al secar una mezcla líquida, a partir de sus sólidos totales, y calcula el rendimiento esperado (kg de polvo por cada 100 kg de leche líquida procesada). Asume que el secado solo remueve agua, sin pérdida de sólidos.</p>
+      <p class="explain">Estima la composición teórica del polvo que resultará al secar una mezcla líquida, a partir de sus sólidos totales, y calcula el rendimiento esperado (kg de polvo por cada 100 kg de leche líquida procesada). Asume que el secado solo remueve agua, sin pérdida de sólidos — por lo que la grasa y la proteína se concentran en la misma proporción.</p>
 
       <div class="field"><span class="k">% Sólidos totales de la mezcla líquida</span>
         <input type="number" id="polvoST" value="12.5" step="0.001" min="0.01" max="99.99"></div>
       <div class="field"><span class="k">% Grasa de la mezcla líquida</span>
         <input type="number" id="polvoGrasa" value="3.2" step="0.001" min="0"></div>
+      <div class="field"><span class="k">% Proteína de la mezcla líquida</span>
+        <input type="number" id="polvoProteina" value="3.1" step="0.001" min="0"></div>
       <div class="field"><span class="k">% Humedad objetivo del polvo</span><span class="s">Típico 2.5–4%</span>
         <input type="number" id="polvoHum" value="3.5" step="0.001" min="0" max="99.99"></div>
       <div class="field"><span class="k">Cantidad de leche líquida a procesar</span><span class="s">kg — opcional, para ver el total esperado</span>
@@ -124,6 +137,33 @@
 
       <div class="results" id="res-polvo"></div>
       <div class="warning" id="warn-polvo" style="display:none;"></div>
+    </section>
+
+    <!-- ESTANDARIZACIÓN DE QUESO (RENDIMIENTO) -->
+    <section class="panel" id="panel-queso" style="--accent:#CB6E17;--accent-soft:#FBE7D2;">
+      <p class="explain">Estima el rendimiento teórico de queso y su composición a partir de los sólidos totales, la grasa y la proteína de la leche inicial, considerando que solo una fracción de cada componente queda retenida en la cuajada — el resto se va al suero. Calibra los porcentajes de retención con tus propios datos de planta para mayor precisión.</p>
+
+      <div class="field"><span class="k">% Sólidos totales de la leche</span>
+        <input type="number" id="quesoST" value="12.5" step="0.001" min="0.01" max="99.99"></div>
+      <div class="field"><span class="k">% Grasa de la leche</span>
+        <input type="number" id="quesoGrasa" value="3.3" step="0.001" min="0"></div>
+      <div class="field"><span class="k">% Proteína de la leche</span>
+        <input type="number" id="quesoProteina" value="3.1" step="0.001" min="0"></div>
+      <div class="field"><span class="k">% Retención de grasa en la cuajada</span><span class="s">Fracción de la grasa de la leche que queda en el queso — típico 88-92%</span>
+        <input type="number" id="quesoRetGrasa" value="90" step="0.001" min="0" max="100"></div>
+      <div class="field"><span class="k">% Retención de proteína en la cuajada</span><span class="s">Fracción de la proteína de la leche que queda en el queso — típico 70-80%</span>
+        <input type="number" id="quesoRetProteina" value="75" step="0.001" min="0" max="100"></div>
+      <div class="field"><span class="k">% Retención de otros sólidos</span><span class="s">Lactosa y minerales residuales atrapados en la humedad de la cuajada — típico 3-8%</span>
+        <input type="number" id="quesoRetSNG" value="5" step="0.001" min="0" max="100"></div>
+      <div class="field"><span class="k">% Humedad objetivo del queso</span>
+        <input type="number" id="quesoHum" value="50" step="0.001" min="0" max="99.99"></div>
+      <div class="field"><span class="k">Cantidad de leche a procesar</span><span class="s">kg — opcional, para ver el total esperado</span>
+        <input type="number" id="quesoCant" value="" step="0.001" min="0" placeholder="Ej. 2000"></div>
+
+      <div class="formula-box" id="formula-queso"></div>
+
+      <div class="results" id="res-queso"></div>
+      <div class="warning" id="warn-queso" style="display:none;"></div>
     </section>
 
     <!-- SOLUCIONES -->
@@ -201,6 +241,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.4-1.8A4 4 0 0 0 6.5 16"/><path d="M9 19h.01M13 19h.01M11 22h.01"/></svg>
       <span>Polvo</span>
     </button>
+    <button data-tab="queso" style="--active-color:#CB6E17;--active-soft:#FBE7D2;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 18 7-13 9 13Z"/><circle cx="12" cy="15" r=".6" fill="currentColor" stroke="none"/><circle cx="9" cy="16.5" r=".6" fill="currentColor" stroke="none"/><circle cx="14.5" cy="17" r=".6" fill="currentColor" stroke="none"/></svg>
+      <span>Queso</span>
+    </button>
     <button data-tab="sol" style="--active-color:#6B5B95;--active-soft:#E9E4F3;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v5.2a2 2 0 0 1-.4 1.2L5.6 15A3 3 0 0 0 8 20h8a3 3 0 0 0 2.4-5l-4-5.6a2 2 0 0 1-.4-1.2V3"/></svg>
       <span>Soluciones</span>
@@ -267,20 +311,21 @@
     }
 
     // ===== 2. LECHE EN POLVO =====
-    const ST = num($('polvoST').value), Gp = num($('polvoGrasa').value), Hp = num($('polvoHum').value);
+    const ST = num($('polvoST').value), Gp = num($('polvoGrasa').value), Pp = num($('polvoProteina').value), Hp = num($('polvoHum').value);
     const cantRaw = $('polvoCant').value, cant = cantRaw === '' ? null : num(cantRaw);
     const resPolvo = $('res-polvo'), warnPolvo = $('warn-polvo'), fPolvo = $('formula-polvo');
 
-    fPolvo.innerHTML = 'Rendimiento (kg polvo / 100 kg leche) = ST × 100 / (100 − Hp)\nGrasa en polvo (%) = Grasa_líquida × (100 − Hp) / ST';
+    fPolvo.innerHTML = 'Rendimiento (kg polvo / 100 kg leche) = ST × 100 / (100 − Hp)\nGrasa en polvo (%) = Grasa_líquida × (100 − Hp) / ST\nProteína en polvo (%) = Proteína_líquida × (100 − Hp) / ST';
 
-    if ([ST,Gp,Hp].some(v => Number.isNaN(v) || v < 0) || ST >= 100 || Hp >= 100 || Gp > ST){
-      resPolvo.innerHTML = card('Rendimiento','—') + card('Grasa en polvo','—');
-      showWarn(warnPolvo, 'Revisa los valores: los sólidos totales y la humedad deben estar entre 0 y 100, y la grasa no puede ser mayor que los sólidos totales.');
+    if ([ST,Gp,Pp,Hp].some(v => Number.isNaN(v) || v < 0) || ST >= 100 || Hp >= 100 || (Gp + Pp) > ST){
+      resPolvo.innerHTML = card('Rendimiento','—') + card('Grasa en polvo','—') + card('Proteína en polvo','—');
+      showWarn(warnPolvo, 'Revisa los valores: los sólidos totales y la humedad deben estar entre 0 y 100, y la suma de grasa + proteína no puede ser mayor que los sólidos totales.');
     } else {
       const rendimiento = ST * 100 / (100 - Hp); // kg polvo por 100 kg leche
       const grasaPolvo = Gp * (100 - Hp) / ST;
-      const otrosSolidos = (100 - Hp) - grasaPolvo;
-      let html = card('Rendimiento', fmt(rendimiento,3)+' kg/100kg') + card('Grasa en polvo', fmt(grasaPolvo,3)+' %') + card('Otros sólidos (SNG)', fmt(otrosSolidos,3)+' %') + card('Humedad en polvo', fmt(Hp,3)+' %');
+      const proteinaPolvo = Pp * (100 - Hp) / ST;
+      const otrosSolidos = (100 - Hp) - grasaPolvo - proteinaPolvo;
+      let html = card('Rendimiento', fmt(rendimiento,3)+' kg/100kg') + card('Grasa en polvo', fmt(grasaPolvo,3)+' %') + card('Proteína en polvo', fmt(proteinaPolvo,3)+' %') + card('Otros sólidos (lactosa/minerales)', fmt(otrosSolidos,3)+' %') + card('Humedad en polvo', fmt(Hp,3)+' %');
       if (cant !== null && !Number.isNaN(cant) && cant >= 0){
         const kgPolvo = rendimiento/100 * cant;
         html += card('Polvo esperado', fmt(kgPolvo,3)+' kg');
@@ -289,7 +334,36 @@
       hideWarn(warnPolvo);
     }
 
-    // ===== 3. SOLUCIONES =====
+    // ===== 3. ESTANDARIZACIÓN DE QUESO (RENDIMIENTO) =====
+    const qST = num($('quesoST').value), qF = num($('quesoGrasa').value), qP = num($('quesoProteina').value);
+    const qRetG = num($('quesoRetGrasa').value), qRetP = num($('quesoRetProteina').value), qRetS = num($('quesoRetSNG').value), qHum = num($('quesoHum').value);
+    const qCantRaw = $('quesoCant').value, qCant = qCantRaw === '' ? null : num(qCantRaw);
+    const resQueso = $('res-queso'), warnQueso = $('warn-queso'), fQueso = $('formula-queso');
+
+    fQueso.innerHTML = 'Otros sólidos = ST − Grasa − Proteína\nGrasa retenida = Grasa × (%RetGrasa ÷ 100)\nProteína retenida = Proteína × (%RetProteína ÷ 100)\nOtros sólidos retenidos = Otros sólidos × (%RetOtros ÷ 100)\nRendimiento (kg queso/100kg leche) = (suma de retenidos) × 100 ÷ (100 − Humedad)\nGrasa en el queso (%) = Grasa retenida × 100 ÷ Rendimiento\nProteína en el queso (%) = Proteína retenida × 100 ÷ Rendimiento';
+
+    if ([qST,qF,qP,qRetG,qRetP,qRetS,qHum].some(v => Number.isNaN(v) || v < 0) || qST >= 100 || qHum >= 100 || (qF + qP) > qST || qRetG > 100 || qRetP > 100 || qRetS > 100){
+      resQueso.innerHTML = card('Rendimiento','—') + card('Grasa en el queso','—') + card('Proteína en el queso','—');
+      showWarn(warnQueso, 'Revisa los valores: los porcentajes deben estar entre 0 y 100, y la suma de grasa + proteína no puede ser mayor que los sólidos totales.');
+    } else {
+      const otros = qST - qF - qP;
+      const grasaRet = qF * (qRetG/100);
+      const proteinaRet = qP * (qRetP/100);
+      const otrosRet = otros * (qRetS/100);
+      const rendimiento = (grasaRet + proteinaRet + otrosRet) * 100 / (100 - qHum);
+      const grasaQueso = grasaRet * 100 / rendimiento;
+      const proteinaQueso = proteinaRet * 100 / rendimiento;
+      const fdm = grasaQueso / (100 - qHum) * 100; // grasa en materia seca
+      let html = card('Rendimiento', fmt(rendimiento,3)+' kg/100kg') + card('Grasa en el queso', fmt(grasaQueso,3)+' %') + card('Proteína en el queso', fmt(proteinaQueso,3)+' %') + card('Grasa en materia seca (FDM)', fmt(fdm,3)+' %') + card('Humedad del queso', fmt(qHum,3)+' %');
+      if (qCant !== null && !Number.isNaN(qCant) && qCant >= 0){
+        const kgQueso = rendimiento/100 * qCant;
+        html += card('Queso esperado', fmt(kgQueso,3)+' kg');
+      }
+      resQueso.innerHTML = html;
+      hideWarn(warnQueso);
+    }
+
+    // ===== 4. SOLUCIONES =====
     // -- porcentual --
     const tipoPct = $('solTipoPct').value, pct = num($('solPct').value), volPct = num($('solPctVol').value);
     const resPct = $('res-pct'), warnPct = $('warn-pct'), fPct = $('formula-pct');
@@ -373,6 +447,12 @@
   });
 
   calcular();
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js').catch(() => {});
+    });
+  }
 </script>
 </body>
 </html>
