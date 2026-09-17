@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+<title>Calculadora de Estandarización y Control de Calidad Láctea</title>
+<style>
+  :root{
+    --teal-deep:#16403B; --bg:#F5F7F6; --ink:#1D2B2A; --ink-soft:#78827E; --line:#E4E9E7;
+    --mono:'SF Mono','Cascadia Mono','Consolas','Menlo',monospace;
+    --sans:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+
+    --std:#2A6F9E;    --std-soft:#DCEAF4;
+    --pol:#A9762F;    --pol-soft:#F3E7D4;
+    --sol:#6B5B95;    --sol-soft:#E9E4F3;
+    --crio:#1F7A8C;   --crio-soft:#DBEEF1;
+    --warn-bg:#FFF3E0; --warn-line:#E8B769; --warn-ink:#8A5000;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; padding:0; background:var(--bg); color:var(--ink); font-family:var(--sans);
+    height:100%; overscroll-behavior:none; }
+  #app{ max-width:460px; margin:0 auto; min-height:100vh; min-height:100dvh;
+    display:flex; flex-direction:column; background:var(--bg); }
+
+  header.top{ background:var(--teal-deep); color:#fff; padding:calc(env(safe-area-inset-top) + 14px) 20px 16px; }
+  header.top .eyebrow{ display:flex; align-items:center; gap:6px; font-size:.68rem; letter-spacing:1.4px;
+    text-transform:uppercase; opacity:.78; margin-bottom:4px; }
+  header.top h1{ font-size:1.02rem; margin:0; line-height:1.35; font-weight:700; }
+
+  main{ flex:1; overflow-y:auto; padding:18px 20px 24px; }
+
+  .explain{ font-size:.8rem; color:var(--ink-soft); line-height:1.5; margin:-2px 0 16px; }
+
+  .subhead{ font-size:.72rem; font-weight:800; letter-spacing:.6px; text-transform:uppercase;
+    color:var(--accent,#16403B); margin: 22px 0 4px; }
+  .subhead:first-of-type{ margin-top:0; }
+
+  .field{ display:block; margin-bottom:14px; }
+  .field .k{ font-size:.72rem; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:var(--ink-soft); }
+  .field .s{ display:block; font-size:.68rem; color:#9AA3A0; margin-top:1px; }
+  .field input, .field select{
+    margin-top:7px; width:100%; font-family:var(--mono); font-size:.98rem;
+    padding:10px 11px; border:1px solid var(--line); border-radius:9px; background:#fff; color:var(--ink);
+  }
+  .field input:focus, .field select:focus{ outline:none; border-color:var(--accent,#16403B); box-shadow:0 0 0 3px var(--accent-soft,#E1EAE8); }
+
+  .formula-box{
+    font-family:var(--mono); font-size:.78rem; line-height:1.6; color:var(--ink);
+    background:#fff; border:1px dashed var(--line); border-radius:9px;
+    padding:10px 12px; margin:2px 0 16px; overflow-x:auto; white-space:pre-wrap;
+  }
+  .formula-box .num{ color:var(--accent,#16403B); font-weight:700; }
+
+  .results{ display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:6px; }
+  .results .card{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 11px; }
+  .results.wide .card{ grid-column:1 / -1; }
+  .results .card .k{ font-size:.62rem; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:#9AA3A0; }
+  .results .card .v{ font-family:var(--mono); font-size:1.05rem; font-weight:700; margin-top:2px; color:var(--accent,#16403B); }
+
+  .warning{ margin-top:12px; display:flex; gap:8px; align-items:flex-start;
+    background:var(--warn-bg); border:1px solid var(--warn-line); color:var(--warn-ink);
+    border-radius:9px; padding:10px 12px; font-size:.8rem; }
+  .warning svg{ flex-shrink:0; margin-top:1px; }
+
+  .divider{ border:none; border-top:1px solid var(--line); margin:20px 0; }
+
+  nav.tabbar{ background:#fff; border-top:1px solid var(--line); display:flex; justify-content:space-around;
+    padding:6px 4px calc(env(safe-area-inset-bottom) + 6px); position:sticky; bottom:0; }
+  nav.tabbar button{ background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding:6px 4px; border-radius:9px; color:#A3A3A3; font-family:var(--sans); flex:1; min-width:0; }
+  nav.tabbar button.active{ color:var(--active-color,#16403B); background:var(--active-soft,#E1EAE8); }
+  nav.tabbar button span{ font-size:.6rem; font-weight:700; white-space:nowrap; }
+  nav.tabbar svg{ width:19px; height:19px; }
+
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header class="top">
+    <div class="eyebrow">🥛 Laboratorio · Control de calidad</div>
+    <h1>Estandarización y control de calidad láctea</h1>
+  </header>
+
+  <main id="main">
+
+    <!-- ESTANDARIZACIÓN DE GRASA -->
+    <section class="panel active" id="panel-std" style="--accent:#2A6F9E;--accent-soft:#DCEAF4;">
+      <p class="explain">Calcula cuánta crema o leche descremada agregar a un lote de leche para subir o bajar su porcentaje de grasa hasta un valor objetivo, por balance de materia. La app decide automáticamente si hace falta agregar crema (para subir grasa) o descremada (para bajarla), según lo que captures.</p>
+
+      <div class="field"><span class="k">Peso o volumen inicial de leche</span><span class="s">kg o L</span>
+        <input type="number" id="stdWi" value="1000" step="0.001" min="0"></div>
+      <div class="field"><span class="k">% Grasa inicial de la leche</span>
+        <input type="number" id="stdGi" value="3.0" step="0.001" min="0"></div>
+      <div class="field"><span class="k">% Grasa objetivo</span>
+        <input type="number" id="stdGf" value="3.5" step="0.001" min="0"></div>
+      <div class="field"><span class="k">% Grasa de la crema de ajuste</span><span class="s">Usada solo si se necesita subir grasa</span>
+        <input type="number" id="stdGc" value="35" step="0.001" min="0"></div>
+      <div class="field"><span class="k">% Grasa de la leche descremada</span><span class="s">Usada solo si se necesita bajar grasa</span>
+        <input type="number" id="stdGd" value="0.05" step="0.001" min="0"></div>
+
+      <div class="formula-box" id="formula-std"></div>
+
+      <div class="results" id="res-std"></div>
+      <div class="warning" id="warn-std" style="display:none;"></div>
+    </section>
+
+    <!-- LECHE EN POLVO -->
+    <section class="panel" id="panel-polvo" style="--accent:#A9762F;--accent-soft:#F3E7D4;">
+      <p class="explain">Estima la composición teórica del polvo que resultará al secar una mezcla líquida, a partir de sus sólidos totales, y calcula el rendimiento esperado (kg de polvo por cada 100 kg de leche líquida procesada). Asume que el secado solo remueve agua, sin pérdida de sólidos.</p>
+
+      <div class="field"><span class="k">% Sólidos totales de la mezcla líquida</span>
+        <input type="number" id="polvoST" value="12.5" step="0.001" min="0.01" max="99.99"></div>
+      <div class="field"><span class="k">% Grasa de la mezcla líquida</span>
+        <input type="number" id="polvoGrasa" value="3.2" step="0.001" min="0"></div>
+      <div class="field"><span class="k">% Humedad objetivo del polvo</span><span class="s">Típico 2.5–4%</span>
+        <input type="number" id="polvoHum" value="3.5" step="0.001" min="0" max="99.99"></div>
+      <div class="field"><span class="k">Cantidad de leche líquida a procesar</span><span class="s">kg — opcional, para ver el total esperado</span>
+        <input type="number" id="polvoCant" value="" step="0.001" min="0" placeholder="Ej. 5000"></div>
+
+      <div class="formula-box" id="formula-polvo"></div>
+
+      <div class="results" id="res-polvo"></div>
+      <div class="warning" id="warn-polvo" style="display:none;"></div>
+    </section>
+
+    <!-- SOLUCIONES -->
+    <section class="panel" id="panel-sol" style="--accent:#6B5B95;--accent-soft:#E9E4F3;">
+      <p class="explain">Calcula los gramos de soluto necesarios para preparar soluciones de laboratorio en tres formas de concentración distintas.</p>
+
+      <div class="subhead">Solución porcentual</div>
+      <p class="explain" style="margin-top:-8px;">Gramos de soluto por cada 100 unidades de solución final. % p/v = gramos por 100 mL; % p/p = gramos por 100 g.</p>
+      <div class="field"><span class="k">Tipo</span>
+        <select id="solTipoPct"><option value="pv">% p/v (g por 100 mL)</option><option value="pp">% p/p (g por 100 g)</option></select></div>
+      <div class="field"><span class="k">Concentración deseada (%)</span>
+        <input type="number" id="solPct" value="10" step="0.001" min="0"></div>
+      <div class="field"><span class="k" id="solPctVolLabel">Volumen final deseado (mL)</span>
+        <input type="number" id="solPctVol" value="100" step="0.001" min="0"></div>
+      <div class="formula-box" id="formula-pct"></div>
+      <div class="results" id="res-pct"></div>
+      <div class="warning" id="warn-pct" style="display:none;"></div>
+
+      <hr class="divider">
+
+      <div class="subhead">Normalidad</div>
+      <p class="explain" style="margin-top:-8px;">Equivalentes de soluto por litro de solución. Depende de la valencia (n): número de H⁺, OH⁻ o cargas que aporta cada molécula.</p>
+      <div class="field"><span class="k">Normalidad deseada (N)</span>
+        <input type="number" id="solN" value="0.1" step="0.0001" min="0"></div>
+      <div class="field"><span class="k">Volumen de solución (L)</span>
+        <input type="number" id="solNVol" value="1" step="0.001" min="0"></div>
+      <div class="field"><span class="k">Peso molecular del soluto (g/mol)</span>
+        <input type="number" id="solNPM" value="40" step="0.0001" min="0"></div>
+      <div class="field"><span class="k">Valencia (n)</span><span class="s">Número de equivalentes por mol</span>
+        <input type="number" id="solNVal" value="1" step="1" min="1"></div>
+      <div class="formula-box" id="formula-norm"></div>
+      <div class="results" id="res-norm"></div>
+      <div class="warning" id="warn-norm" style="display:none;"></div>
+
+      <hr class="divider">
+
+      <div class="subhead">Molalidad</div>
+      <p class="explain" style="margin-top:-8px;">Moles de soluto por kilogramo de solvente (no de solución total).</p>
+      <div class="field"><span class="k">Molalidad deseada (m)</span>
+        <input type="number" id="solM" value="0.5" step="0.0001" min="0"></div>
+      <div class="field"><span class="k">Masa de solvente (kg)</span>
+        <input type="number" id="solMKg" value="1" step="0.001" min="0"></div>
+      <div class="field"><span class="k">Peso molecular del soluto (g/mol)</span>
+        <input type="number" id="solMPM" value="58.44" step="0.0001" min="0"></div>
+      <div class="formula-box" id="formula-molal"></div>
+      <div class="results" id="res-molal"></div>
+      <div class="warning" id="warn-molal" style="display:none;"></div>
+    </section>
+
+    <!-- CRIOSCOPÍA -->
+    <section class="panel" id="panel-crio" style="--accent:#1F7A8C;--accent-soft:#DBEEF1;">
+      <p class="explain">Detecta y cuantifica el agua añadida a la leche comparando su punto crioscópico (punto de congelación) contra el valor normal esperado. El agua añadida eleva el punto de congelación, acercándolo a 0 °C.</p>
+
+      <div class="field"><span class="k">Punto crioscópico normal de referencia (°C)</span><span class="s">Editable según tu norma o estándar interno — valor típico entre -0.550 y -0.510</span>
+        <input type="number" id="crioNormal" value="-0.530" step="0.001"></div>
+      <div class="field"><span class="k">Punto crioscópico medido en la muestra (°C)</span>
+        <input type="number" id="crioMuestra" value="-0.480" step="0.001"></div>
+      <div class="field"><span class="k">Volumen o cantidad de leche analizada</span><span class="s">kg o L</span>
+        <input type="number" id="crioVol" value="1000" step="0.001" min="0"></div>
+
+      <div class="formula-box" id="formula-crio"></div>
+
+      <div class="results" id="res-crio"></div>
+      <div class="warning" id="warn-crio" style="display:none;"></div>
+    </section>
+
+  </main>
+
+  <nav class="tabbar" id="tabbar">
+    <button data-tab="std" class="active" style="--active-color:#2A6F9E;--active-soft:#DCEAF4;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 8h14l-2 5a5 5 0 0 1-10 0Z"/></svg>
+      <span>Grasa</span>
+    </button>
+    <button data-tab="polvo" style="--active-color:#A9762F;--active-soft:#F3E7D4;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.4-1.8A4 4 0 0 0 6.5 16"/><path d="M9 19h.01M13 19h.01M11 22h.01"/></svg>
+      <span>Polvo</span>
+    </button>
+    <button data-tab="sol" style="--active-color:#6B5B95;--active-soft:#E9E4F3;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v5.2a2 2 0 0 1-.4 1.2L5.6 15A3 3 0 0 0 8 20h8a3 3 0 0 0 2.4-5l-4-5.6a2 2 0 0 1-.4-1.2V3"/></svg>
+      <span>Soluciones</span>
+    </button>
+    <button data-tab="crio" style="--active-color:#1F7A8C;--active-soft:#DBEEF1;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M4.9 4.9l14.2 14.2M19.1 4.9 4.9 19.1M2 12h20M6.5 6.5l3 3m5 5 3 3m0-11-3 3m-5 5-3 3"/></svg>
+      <span>Crioscopía</span>
+    </button>
+  </nav>
+
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const num = (v) => (v === '' || v === null || v === undefined ? NaN : parseFloat(v));
+  const fmt = (n, dec) => (n===null||n===undefined||Number.isNaN(n)||!Number.isFinite(n)) ? '—' :
+    n.toLocaleString('es-MX', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+  const warnSVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
+  function card(k, v){ return `<div class="card"><div class="k">${k}</div><div class="v">${v}</div></div>`; }
+  function showWarn(el, msg){ el.style.display='flex'; el.innerHTML = warnSVG + '<span>' + msg + '</span>'; }
+  function hideWarn(el){ el.style.display='none'; }
+
+  function calcular(){
+
+    // ===== 1. ESTANDARIZACIÓN DE GRASA =====
+    const Wi = num($('stdWi').value), Gi = num($('stdGi').value), Gf = num($('stdGf').value);
+    const Gc = num($('stdGc').value), Gd = num($('stdGd').value);
+    const resStd = $('res-std'), warnStd = $('warn-std'), fStd = $('formula-std');
+
+    if ([Wi,Gi,Gf,Gc,Gd].some(v => Number.isNaN(v) || v < 0)){
+      resStd.innerHTML = card('Resultado','—');
+      showWarn(warnStd, 'Revisa los valores: no puede haber campos vacíos ni negativos.');
+      fStd.textContent = 'Kg a agregar = Wi × (ΔGrasa) / (Gagregado − Gf)';
+    } else if (Math.abs(Gf - Gi) < 1e-9){
+      resStd.innerHTML = card('Resultado', 'Ya está en el objetivo') + card('Total', fmt(Wi,3));
+      hideWarn(warnStd);
+      fStd.textContent = 'La grasa objetivo es igual a la inicial: no se requiere agregar nada.';
+    } else if (Gf > Gi){
+      // subir grasa con crema
+      if (Gc <= Gf){
+        resStd.innerHTML = card('Crema a agregar','—');
+        showWarn(warnStd, 'La grasa de la crema debe ser mayor que la grasa objetivo para poder subir el %.');
+        fStd.textContent = 'Kg de crema = Wi × (Gf − Gi) / (Gc − Gf)';
+      } else {
+        const x = Wi * (Gf - Gi) / (Gc - Gf);
+        const total = Wi + x;
+        resStd.innerHTML = card('Crema a agregar', fmt(x,3)+' kg') + card('Peso/volumen final', fmt(total,3)) + card('Grasa final verificada', fmt(Gf,3)+' %');
+        hideWarn(warnStd);
+        fStd.innerHTML = 'Subiendo grasa (se agrega crema):\nKg de crema = Wi × (Gf − Gi) / (<span class="num">Gc</span> − Gf)\n= ' + fmt(Wi,2) + ' × (' + fmt(Gf,2) + ' − ' + fmt(Gi,2) + ') / (' + fmt(Gc,2) + ' − ' + fmt(Gf,2) + ')';
+      }
+    } else {
+      // bajar grasa con descremada
+      if (Gf <= Gd){
+        resStd.innerHTML = card('Descremada a agregar','—');
+        showWarn(warnStd, 'La grasa objetivo debe ser mayor que la grasa de la leche descremada.');
+        fStd.textContent = 'Kg de descremada = Wi × (Gi − Gf) / (Gf − Gd)';
+      } else {
+        const x = Wi * (Gi - Gf) / (Gf - Gd);
+        const total = Wi + x;
+        resStd.innerHTML = card('Descremada a agregar', fmt(x,3)+' kg') + card('Peso/volumen final', fmt(total,3)) + card('Grasa final verificada', fmt(Gf,3)+' %');
+        hideWarn(warnStd);
+        fStd.innerHTML = 'Bajando grasa (se agrega leche descremada):\nKg de descremada = Wi × (Gi − Gf) / (Gf − <span class="num">Gd</span>)\n= ' + fmt(Wi,2) + ' × (' + fmt(Gi,2) + ' − ' + fmt(Gf,2) + ') / (' + fmt(Gf,2) + ' − ' + fmt(Gd,2) + ')';
+      }
+    }
+
+    // ===== 2. LECHE EN POLVO =====
+    const ST = num($('polvoST').value), Gp = num($('polvoGrasa').value), Hp = num($('polvoHum').value);
+    const cantRaw = $('polvoCant').value, cant = cantRaw === '' ? null : num(cantRaw);
+    const resPolvo = $('res-polvo'), warnPolvo = $('warn-polvo'), fPolvo = $('formula-polvo');
+
+    fPolvo.innerHTML = 'Rendimiento (kg polvo / 100 kg leche) = ST × 100 / (100 − Hp)\nGrasa en polvo (%) = Grasa_líquida × (100 − Hp) / ST';
+
+    if ([ST,Gp,Hp].some(v => Number.isNaN(v) || v < 0) || ST >= 100 || Hp >= 100 || Gp > ST){
+      resPolvo.innerHTML = card('Rendimiento','—') + card('Grasa en polvo','—');
+      showWarn(warnPolvo, 'Revisa los valores: los sólidos totales y la humedad deben estar entre 0 y 100, y la grasa no puede ser mayor que los sólidos totales.');
+    } else {
+      const rendimiento = ST * 100 / (100 - Hp); // kg polvo por 100 kg leche
+      const grasaPolvo = Gp * (100 - Hp) / ST;
+      const otrosSolidos = (100 - Hp) - grasaPolvo;
+      let html = card('Rendimiento', fmt(rendimiento,3)+' kg/100kg') + card('Grasa en polvo', fmt(grasaPolvo,3)+' %') + card('Otros sólidos (SNG)', fmt(otrosSolidos,3)+' %') + card('Humedad en polvo', fmt(Hp,3)+' %');
+      if (cant !== null && !Number.isNaN(cant) && cant >= 0){
+        const kgPolvo = rendimiento/100 * cant;
+        html += card('Polvo esperado', fmt(kgPolvo,3)+' kg');
+      }
+      resPolvo.innerHTML = html;
+      hideWarn(warnPolvo);
+    }
+
+    // ===== 3. SOLUCIONES =====
+    // -- porcentual --
+    const tipoPct = $('solTipoPct').value, pct = num($('solPct').value), volPct = num($('solPctVol').value);
+    const resPct = $('res-pct'), warnPct = $('warn-pct'), fPct = $('formula-pct');
+    $('solPctVolLabel').textContent = tipoPct === 'pv' ? 'Volumen final deseado (mL)' : 'Masa final deseada (g)';
+    if ([pct,volPct].some(v => Number.isNaN(v) || v < 0)){
+      resPct.innerHTML = card('Soluto necesario','—');
+      showWarn(warnPct, 'Revisa los valores: no puede haber campos vacíos ni negativos.');
+      fPct.textContent = tipoPct === 'pv' ? 'g soluto = (%p/v ÷ 100) × Volumen (mL)' : 'g soluto = (%p/p ÷ 100) × Masa total (g)';
+    } else {
+      const gSoluto = (pct/100) * volPct;
+      if (tipoPct === 'pv'){
+        resPct.innerHTML = card('Soluto necesario', fmt(gSoluto,4)+' g') + card('Aforar a', fmt(volPct,3)+' mL');
+        fPct.innerHTML = 'g soluto = (%p/v ÷ 100) × Volumen (mL)\n= (' + fmt(pct,2) + ' ÷ 100) × ' + fmt(volPct,2);
+      } else {
+        const gSolvente = volPct - gSoluto;
+        resPct.innerHTML = card('Soluto necesario', fmt(gSoluto,4)+' g') + card('Solvente necesario', fmt(gSolvente,4)+' g');
+        fPct.innerHTML = 'g soluto = (%p/p ÷ 100) × Masa total (g)\n= (' + fmt(pct,2) + ' ÷ 100) × ' + fmt(volPct,2);
+      }
+      hideWarn(warnPct);
+    }
+
+    // -- normalidad --
+    const N = num($('solN').value), volN = num($('solNVol').value), pmN = num($('solNPM').value), val = num($('solNVal').value);
+    const resNorm = $('res-norm'), warnNorm = $('warn-norm'), fNorm = $('formula-norm');
+    fNorm.textContent = 'g soluto = N × V(L) × (PM ÷ n)';
+    if ([N,volN,pmN,val].some(v => Number.isNaN(v) || v <= 0) ){
+      resNorm.innerHTML = card('Soluto necesario','—');
+      showWarn(warnNorm, 'Revisa los valores: todos deben ser mayores que cero.');
+    } else {
+      const pesoEq = pmN/val;
+      const gN = N * volN * pesoEq;
+      resNorm.innerHTML = card('Peso equivalente', fmt(pesoEq,4)+' g/eq') + card('Soluto necesario', fmt(gN,4)+' g');
+      hideWarn(warnNorm);
+    }
+
+    // -- molalidad --
+    const m = num($('solM').value), kgSolv = num($('solMKg').value), pmM = num($('solMPM').value);
+    const resMolal = $('res-molal'), warnMolal = $('warn-molal'), fMolal = $('formula-molal');
+    fMolal.textContent = 'g soluto = m × kg solvente × PM';
+    if ([m,kgSolv,pmM].some(v => Number.isNaN(v) || v < 0)){
+      resMolal.innerHTML = card('Soluto necesario','—');
+      showWarn(warnMolal, 'Revisa los valores: no puede haber campos vacíos ni negativos.');
+    } else {
+      const moles = m * kgSolv;
+      const gM = moles * pmM;
+      resMolal.innerHTML = card('Moles necesarios', fmt(moles,4)+' mol') + card('Soluto necesario', fmt(gM,4)+' g');
+      hideWarn(warnMolal);
+    }
+
+    // ===== 4. CRIOSCOPÍA =====
+    const PCn = num($('crioNormal').value), PCm = num($('crioMuestra').value), volCrio = num($('crioVol').value);
+    const resCrio = $('res-crio'), warnCrio = $('warn-crio'), fCrio = $('formula-crio');
+    fCrio.innerHTML = '% Agua añadida = [(PCn − PCm) ÷ PCn] × 100\nVolumen de agua = (% Agua ÷ 100) × Volumen analizado';
+
+    if ([PCn,PCm,volCrio].some(v => Number.isNaN(v)) || PCn >= 0 || volCrio < 0){
+      resCrio.innerHTML = card('% Agua añadida','—') + card('Volumen de agua','—');
+      showWarn(warnCrio, 'Revisa los valores: el punto crioscópico normal debe ser negativo, y el volumen no puede ser negativo.');
+    } else {
+      let pctAgua = ((PCn - PCm) / PCn) * 100;
+      if (pctAgua < 0){
+        resCrio.innerHTML = card('% Agua añadida', '0.00 %') + card('Volumen de agua', '0.000');
+        showWarn(warnCrio, 'El punto crioscópico medido es más bajo que el normal: no hay evidencia de agua añadida por este método (puede indicar otra desviación de calidad).');
+      } else {
+        const volAgua = (pctAgua/100) * volCrio;
+        resCrio.innerHTML = card('% Agua añadida', fmt(pctAgua,3)+' %') + card('Volumen de agua', fmt(volAgua,3));
+        hideWarn(warnCrio);
+      }
+    }
+  }
+
+  document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', calcular));
+
+  document.getElementById('tabbar').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    document.querySelectorAll('nav.tabbar button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    document.getElementById('main').scrollTop = 0;
+  });
+
+  calcular();
+</script>
+</body>
+</html>
